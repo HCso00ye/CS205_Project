@@ -1,4 +1,12 @@
+#include <map>
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <cstdio>
+#include <cstdint>
+#include <cstring>
+#include <algorithm>
+
 
 using namespace std;
 
@@ -32,7 +40,6 @@ struct WAVHeader {
     FILE *fo;
 };
 
-
 uint8_t chunk_buf[10000000];
 int sample_buf[2][10000000];
 
@@ -61,6 +68,31 @@ void print_menu() {
     printf("\t3. Exit\n");
     printf("\n");
 }
+
+std::map<string, string> readConfig(const string& filename) {
+    ifstream configFile(filename);
+    map<string, string> configValues;
+    string line, section;
+
+    while (getline(configFile, line)) {
+        if (line[0] == '[') {
+            section = line.substr(1, line.find(']') - 1);
+            continue;
+        }
+
+        istringstream is_line(line);
+        string key;
+        if (getline(is_line, key, '=')) {
+            string value;
+            if (getline(is_line, value)) {
+                configValues[section + "." + key] = value;
+            }
+        }
+    }
+
+    return configValues;
+}
+
 
 struct WAVHeader read_header() {
     // Initialize header
@@ -178,7 +210,6 @@ struct WAVHeader read_header() {
     return header;
 }
 
-
 void write_bytes_little(FILE *f, const void *buf, uint32_t size) {
     char *buf_char = (char *) buf;
     for (uint32_t i = 0; i < size; i++) {
@@ -244,7 +275,6 @@ void raw_to_wav(struct WAVHeader header) {
     puts("Successfully convert the audio file.");
 }
 
-
 struct WAVHeader read_wav(FILE *f) {
     struct WAVHeader header;
     header.fi = f;
@@ -285,7 +315,6 @@ struct WAVHeader read_wav(FILE *f) {
     printf("Successfully read the audio file with a size %u Bytes!\n", header.riff_chunk_size + 8);
     return header;
 }
-
 
 uint8_t cal_crc8(uint8_t crc8, const uint8_t data) {
     int crc_poly = 0x107;
@@ -521,6 +550,7 @@ int main(){
         struct WAVHeader header;
         switch(opt){
             case 1:
+                // Request header
                 header = read_header();
                 raw_to_wav(header);
                 break;
