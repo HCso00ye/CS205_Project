@@ -224,6 +224,48 @@ void raw_to_wav(struct WAVHeader header) {
 }
 
 
+struct WAVHeader read_wav(FILE *f) {
+    struct WAVHeader header;
+    header.fi = f;
+    // Read riff header
+    char buf[5];
+    buf[4] = '\0';
+    read_bytes_little(header.fi, buf, 4);
+    read_bytes_little(header.fi, &header.riff_chunk_size, 4);
+    read_bytes_little(header.fi, buf, 4);
+    // Read format header
+    read_bytes_little(header.fi, buf, 4);
+    read_bytes_little(header.fi, &header.format_chunk_size, 4);
+    read_bytes_little(header.fi, &header.audio_format_code, 2);
+    read_bytes_little(header.fi, &header.channels, 2);
+    read_bytes_little(header.fi, &header.sample_rate, 4);
+    read_bytes_little(header.fi, &header.bytes_per_sec, 4);
+    read_bytes_little(header.fi, &header.block_align, 2);
+    read_bytes_little(header.fi, &header.bits_per_sample, 2);
+    if (header.format_chunk_size == 40) {
+        read_bytes_little(header.fi, &header.cb_size, 2);
+        read_bytes_little(header.fi, &header.valid_bits_per_sample, 2);
+        read_bytes_little(header.fi, &header.channel_mask, 4);
+        for (int i = 0; i < 16; i++) {
+            read_bytes_little(header.fi, &header.sub_format[i], 1);
+        }
+    }
+    // Read fact header
+    read_bytes_little(header.fi, buf, 4);
+    if (strcmp(buf, "fact") == 0) {
+        read_bytes_little(header.fi, &header.fact_chunk_size, 4);
+        read_bytes_little(header.fi, &header.fact_chunk_data, header.fact_chunk_size);
+    }
+    // Read data chunk
+    if (strcmp(buf, "data") != 0) {
+        read_bytes_little(header.fi, buf, 4);
+    }
+    read_bytes_little(header.fi, &header.data_chunk_size, 4);
+    printf("Successfully read the audio file with a size %u Bytes!\n", header.riff_chunk_size + 8);
+    return header;
+}
+
+
 int main(){
     while(1){
         print_menu();
