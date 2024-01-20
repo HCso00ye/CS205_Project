@@ -291,12 +291,11 @@ uint16_t cal_crc16(uint16_t crc16, const uint16_t data) {
     return crc16;
 }
 
-
 void wav_to_flac() {
     FILE *f;
     char filename[100];
     while (1) {
-        printf("Input file name of wav file: ");
+        printf("Enter the input file path: ");
         scanf("%s", filename);
         f = fopen(filename, "rb");
         if (f == NULL) {
@@ -306,7 +305,7 @@ void wav_to_flac() {
         }
     }
     struct WAVHeader wav_header = read_wav(f);
-    printf("Input the output file name: ");
+    printf("Enter the output file path: ");
     scanf("%s", filename);
     wav_header.fo = fopen(filename, "wb");
     if (wav_header.channels != 2) {
@@ -317,12 +316,12 @@ void wav_to_flac() {
         printf("Error: bits per sample is %u which should be 16 or 24\n", wav_header.bits_per_sample);
         return;
     }
-    puts("Please wait for writing file!");
+    puts("Please wait for writing file.");
     uint32_t tmp, rem;
     write_bytes_little(wav_header.fo, "fLaC", 4);
-    uint32_t block_samples = 2048;
+    uint32_t block_samples = 4096;
     // Write STREAMINFO header
-    tmp = (1 << 7);
+    tmp = 0;
     write_bytes_big(wav_header.fo, &tmp, 1);
     tmp = 34;
     write_bytes_big(wav_header.fo, &tmp, 3);
@@ -354,6 +353,26 @@ void wav_to_flac() {
         tmp = 0;
         write_bytes_big(wav_header.fo, &tmp, 1);
     }
+    // Write VORBIS_COMMENT
+    tmp = (1 << 7) + 4;
+    write_bytes_big(wav_header.fo, &tmp, 1);
+    // Set comment vendor
+    const char *vendor = "Transformed from wav";
+    size_t vendor_length = strlen(vendor);
+    // Set comment list
+    const char *comment1 = "This is verbatim flac audio";
+    size_t comment1_length = strlen(comment1);
+    // Block size
+    tmp = vendor_length + comment1_length + 12;
+    write_bytes_big(wav_header.fo, &tmp, 3);
+    // Write comment
+    write_bytes_little(wav_header.fo, &vendor_length, 4);
+    write_bytes_little(wav_header.fo, vendor, vendor_length);
+    // Write comment list
+    tmp = 1;
+    write_bytes_little(wav_header.fo, &tmp, 4);
+    write_bytes_little(wav_header.fo, &comment1_length, 4);
+    write_bytes_little(wav_header.fo, comment1, comment1_length);
     // Write frames
     uint32_t frame_num = 0;
     while (1) {
@@ -362,50 +381,84 @@ void wav_to_flac() {
         if (num == 0) {
             break;
         }
-        tmp_buf_len = 0;
+        uint8_t crc8 = 0;
+        uint16_t crc16 = 0;
         // Write frame header
         tmp = 0b11111111111110;
         rem = tmp & 0x3f;
         tmp >>= 6;
-        tmp_buf[tmp_buf_len++] = tmp;
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
         write_bytes_big(wav_header.fo, &tmp, 1);
         tmp = rem;
         tmp = tmp << 1; // reserved
         tmp = tmp << 1; // blocking strategy
-        tmp_buf[tmp_buf_len++] = tmp;
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
         write_bytes_big(wav_header.fo, &tmp, 1);
         // Write the block size and sample rate
-        tmp = 0b1011;
-        tmp <<= 4; // STREAMINFO
-        tmp_buf[tmp_buf_len++] = tmp;
+        tmp = 7;
+        tmp <<= 4;
+        if(wav_header.sample_rate % 10 == 0){
+            tmp += 14;
+        }else{
+            tmp += 13;
+        }
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
         write_bytes_big(wav_header.fo, &tmp, 1);
         // Write channel assignment, sample size in bits and reserved bit
         tmp = 0b0001;
-        tmp <<= 4;
-        tmp_buf[tmp_buf_len++] = tmp;
+        tmp <<= 3;
+        if(wav_header.bits_per_sample == 16){
+            tmp += 4;
+        }else{
+            tmp += 6;
+        }
+        tmp <<= 1;
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
         write_bytes_big(wav_header.fo, &tmp, 1);
         // Write frame number
-        tmp_buf[tmp_buf_len++] = frame_num;
-        write_bytes_big(wav_header.fo, &frame_num, 1);
-//        uint8_t stack[8];
-//        uint32_t t_frame_num = frame_num;
-//        for(int i=0;i<7;i++) {
-//            uint8_t cur = t_frame_num & 0x3f;
-//            stack[i] = (0b10 << 6) + cur;
-//            t_frame_num >>= 6;
-//        }
-//        stack[7] = 0b11111110;
-//        for(int i=7;i>=0;i--){
-//            tmp_buf[tmp_buf_len++] = stack[i];
-//            write_bytes_big(wav_header.fo, &stack[i], 1);
-//        }
-        // crc-8
-        tmp = PY_CRC_8_T(tmp_buf, tmp_buf_len);
-        tmp_buf[tmp_buf_len++] = tmp;
+        tmp = 0xFC | (frame_num >> 30);
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
         write_bytes_big(wav_header.fo, &tmp, 1);
+        for(int i=24;i>=0;i-=6){
+            tmp = 0x80 | ((frame_num >> i) & 0x3F);
+            crc8 = cal_crc8(crc8, tmp);
+            crc16 = cal_crc16(crc16, tmp);
+            write_bytes_big(wav_header.fo, &tmp, 1);
+        }
         // Calculate the number of sample we derive
         uint32_t samples = num / wav_header.block_align;
         uint32_t depth = wav_header.bits_per_sample / 8;
+        // Write block size
+        tmp = (samples - 1) >> 8;
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        tmp = (samples - 1) & 0xFF;
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        // Write sample rate
+        uint32_t val = wav_header.sample_rate;
+        if(wav_header.sample_rate % 10 == 0){
+            val /= 10;
+        }
+        tmp = val >> 8;
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        tmp = val & 0xFF;
+        crc8 = cal_crc8(crc8, tmp);
+        crc16 = cal_crc16(crc16, tmp);
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        // crc-8
+        tmp = crc8;
+        crc16 = cal_crc16(crc16, tmp);
+        write_bytes_big(wav_header.fo, &tmp, 1);
         int idx = 0;
         for (int i = 0; i < samples; i++) {
             for (int j = 0; j < 2; j++) {
@@ -413,30 +466,31 @@ void wav_to_flac() {
                 for (int k = 0; k < depth; k++) {
                     sample_buf[j][i] = (sample_buf[j][i] << 8) + chunk_buf[idx++];
                 }
+                sample_buf[j][i] = (sample_buf[j][i] << (32 - wav_header.bits_per_sample)) >> (32 - wav_header.bits_per_sample);
             }
         }
         // Write channels
         for (int channel = 0; channel < 2; channel++) {
             tmp = 1;
             tmp <<= 1;
-            tmp_buf[tmp_buf_len++] = tmp;
+            crc16 = cal_crc16(crc16, tmp);
             write_bytes_big(wav_header.fo, &tmp, 1);
             for (int i = 0; i < samples; i++) {
-                for (int j = (int) depth - 1; j >= 0; j--) {
-                    tmp_buf[tmp_buf_len++] = (sample_buf[channel][i] >> (j * 8)) & 0xFF;
-                    write_bytes_big(wav_header.fo, &tmp_buf[tmp_buf_len++], 1);
+                for (int j = 0; j < depth; j++) {
+                    tmp = (sample_buf[channel][i] >> (j * 8)) & 0xFF;
+                    crc16 = cal_crc16(crc16, tmp);
+                    write_bytes_big(wav_header.fo, &tmp, 1);
                 }
             }
         }
         // skip crc
-        tmp = PY_CRC_16_T16(tmp_buf, tmp_buf_len);
+        tmp = crc16;
         write_bytes_big(wav_header.fo, &tmp, 2);
         frame_num++;
     }
     fclose(wav_header.fi);
     fclose(wav_header.fo);
 }
-
 
 int main(){
     while(1){
