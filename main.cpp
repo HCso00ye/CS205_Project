@@ -182,6 +182,47 @@ void read_bytes_little(FILE *f, const void *buf, uint32_t size) {
     }
 }
 
+void raw_to_wav(struct WAVHeader header) {
+    // Write riff header
+    write_bytes_little(header.fo, "RIFF", 4);
+    write_bytes_little(header.fo, &header.riff_chunk_size, 4);
+    write_bytes_little(header.fo, "WAVE", 4);
+    // Write format header
+    write_bytes_little(header.fo, "fmt ", 4);
+    write_bytes_little(header.fo, &header.format_chunk_size, 4);
+    write_bytes_little(header.fo, &header.audio_format_code, 2);
+    write_bytes_little(header.fo, &header.channels, 2);
+    write_bytes_little(header.fo, &header.sample_rate, 4);
+    write_bytes_little(header.fo, &header.bytes_per_sec, 4);
+    write_bytes_little(header.fo, &header.block_align, 2);
+    write_bytes_little(header.fo, &header.bits_per_sample, 2);
+    if (header.has_cb_content) {
+        write_bytes_little(header.fo, &header.cb_size, 2);
+        write_bytes_little(header.fo, &header.valid_bits_per_sample, 2);
+        write_bytes_little(header.fo, &header.channel_mask, 4);
+        for (int i = 0; i < 16; i++) {
+            write_bytes_little(header.fo, &header.sub_format[i], 1);
+        }
+    }
+    // Write fact header
+    if (header.has_fact_chunk) {
+        write_bytes_little(header.fo, "fact", 4);
+        write_bytes_little(header.fo, &header.fact_chunk_size, 4);
+        write_bytes_little(header.fo, &header.fact_chunk_data, header.fact_chunk_size);
+    }
+    // Write data chunk
+    write_bytes_little(header.fo, "data", 4);
+    write_bytes_little(header.fo, &header.data_chunk_size, 4);
+    puts("Please wait for writing file.");
+    char c;
+    while (fread(&c, 1, 1, header.fi)) {
+        fwrite(&c, 1, 1, header.fo);
+    }
+    fclose(header.fi);
+    fclose(header.fo);
+    puts("Successfully convert the audio file.");
+}
+
 
 int main(){
     while(1){
