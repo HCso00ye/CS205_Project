@@ -266,6 +266,33 @@ struct WAVHeader read_wav(FILE *f) {
 }
 
 
+uint8_t cal_crc8(uint8_t crc8, const uint8_t data) {
+    int crc_poly = 0x107;
+    crc8 ^= data;
+    for (int8_t i = 0; i < 8; ++i) {
+        if (crc8 & 0x80)
+            crc8 = (crc8 << 1) ^ crc_poly;
+        else
+            crc8 <<= 1;
+    }
+    return crc8;
+}
+
+uint16_t cal_crc16(uint16_t crc16, const uint16_t data) {
+    const int polynomial = 0x18005;
+    crc16 ^= data << 8;
+    for (uint8_t bit = 0; bit < 8; ++bit) {
+        if (crc16 & 0x8000) {
+            crc16 = (crc16 << 1) ^ polynomial;
+        } else {
+            crc16 <<= 1;
+        }
+    }
+    return crc16;
+}
+
+
+
 int main(){
     while(1){
         print_menu();
