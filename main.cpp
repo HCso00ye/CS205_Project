@@ -157,6 +157,24 @@ struct WAVHeader read_header() {
     return header;
 }
 
+
+void write_bytes_little(FILE *f, const void *buf, uint32_t size) {
+    char *buf_char = (char *) buf;
+    for (uint32_t i = 0; i < size; i++) {
+        fwrite(buf_char + i, 1, 1, f);
+    }
+}
+
+void write_bytes_big(FILE *f, const void *buf, uint32_t size) {
+    if(size == 0){
+        return;
+    }
+    char *buf_char = (char *) buf;
+    for (int32_t i = (int32_t)size - 1; i >= 0; i--) {
+        fwrite(buf_char + i, 1, 1, f);
+    }
+}
+
 int main(){
     while(1){
         print_menu();
