@@ -7,7 +7,7 @@
 #include <map>
 #include <sstream>
 
-#include "w2r.cpp"
+#include "w2r.h"
 #include "headData.h"
 
 using namespace std;
