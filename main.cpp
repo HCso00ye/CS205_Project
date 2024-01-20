@@ -292,6 +292,151 @@ uint16_t cal_crc16(uint16_t crc16, const uint16_t data) {
 }
 
 
+void wav_to_flac() {
+    FILE *f;
+    char filename[100];
+    while (1) {
+        printf("Input file name of wav file: ");
+        scanf("%s", filename);
+        f = fopen(filename, "rb");
+        if (f == NULL) {
+            puts("File does not exist, please input again!");
+        } else {
+            break;
+        }
+    }
+    struct WAVHeader wav_header = read_wav(f);
+    printf("Input the output file name: ");
+    scanf("%s", filename);
+    wav_header.fo = fopen(filename, "wb");
+    if (wav_header.channels != 2) {
+        printf("Error: channels is %u which should be 2\n", wav_header.channels);
+        return;
+    }
+    if (wav_header.bits_per_sample != 16 && wav_header.bits_per_sample != 24) {
+        printf("Error: bits per sample is %u which should be 16 or 24\n", wav_header.bits_per_sample);
+        return;
+    }
+    puts("Please wait for writing file!");
+    uint32_t tmp, rem;
+    write_bytes_little(wav_header.fo, "fLaC", 4);
+    uint32_t block_samples = 2048;
+    // Write STREAMINFO header
+    tmp = (1 << 7);
+    write_bytes_big(wav_header.fo, &tmp, 1);
+    tmp = 34;
+    write_bytes_big(wav_header.fo, &tmp, 3);
+    // Write STREAMINFO body
+    write_bytes_big(wav_header.fo, &block_samples, 2);
+    write_bytes_big(wav_header.fo, &block_samples, 2);
+    tmp = 0;
+    write_bytes_big(wav_header.fo, &tmp, 3);
+    write_bytes_big(wav_header.fo, &tmp, 3);
+    // Write first 16 bits of the sample rate
+    tmp = wav_header.sample_rate >> 4;
+    rem = wav_header.sample_rate & 0xF;
+    write_bytes_big(wav_header.fo, &tmp, 2);
+    // Pack rem, number of channels and bits per sample to gather (4 + 3 + 5 = 12 bits)
+    tmp = (rem << 8) + ((wav_header.channels - 1) << 5) + (wav_header.bits_per_sample - 1);
+    // Write first 8 bits of the tmp
+    rem = tmp & 0xF;
+    tmp >>= 4;
+    write_bytes_big(wav_header.fo, &tmp, 1);
+    tmp = rem;
+    // Assume that the total number of samples will not exceed 4 bytes
+    tmp <<= 4;
+    write_bytes_big(wav_header.fo, &tmp, 1);
+    // Write the total samples in stream and tmp
+    tmp = wav_header.data_chunk_size / wav_header.block_align;
+    write_bytes_big(wav_header.fo, &tmp, 4);
+    // Don't set MD5
+    for (int i = 0; i < 16; i++) {
+        tmp = 0;
+        write_bytes_big(wav_header.fo, &tmp, 1);
+    }
+    // Write frames
+    uint32_t frame_num = 0;
+    while (1) {
+        // Write sub frame
+        uint32_t num = fread(chunk_buf, 1, block_samples * wav_header.block_align, wav_header.fi);
+        if (num == 0) {
+            break;
+        }
+        tmp_buf_len = 0;
+        // Write frame header
+        tmp = 0b11111111111110;
+        rem = tmp & 0x3f;
+        tmp >>= 6;
+        tmp_buf[tmp_buf_len++] = tmp;
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        tmp = rem;
+        tmp = tmp << 1; // reserved
+        tmp = tmp << 1; // blocking strategy
+        tmp_buf[tmp_buf_len++] = tmp;
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        // Write the block size and sample rate
+        tmp = 0b1011;
+        tmp <<= 4; // STREAMINFO
+        tmp_buf[tmp_buf_len++] = tmp;
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        // Write channel assignment, sample size in bits and reserved bit
+        tmp = 0b0001;
+        tmp <<= 4;
+        tmp_buf[tmp_buf_len++] = tmp;
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        // Write frame number
+        tmp_buf[tmp_buf_len++] = frame_num;
+        write_bytes_big(wav_header.fo, &frame_num, 1);
+//        uint8_t stack[8];
+//        uint32_t t_frame_num = frame_num;
+//        for(int i=0;i<7;i++) {
+//            uint8_t cur = t_frame_num & 0x3f;
+//            stack[i] = (0b10 << 6) + cur;
+//            t_frame_num >>= 6;
+//        }
+//        stack[7] = 0b11111110;
+//        for(int i=7;i>=0;i--){
+//            tmp_buf[tmp_buf_len++] = stack[i];
+//            write_bytes_big(wav_header.fo, &stack[i], 1);
+//        }
+        // crc-8
+        tmp = PY_CRC_8_T(tmp_buf, tmp_buf_len);
+        tmp_buf[tmp_buf_len++] = tmp;
+        write_bytes_big(wav_header.fo, &tmp, 1);
+        // Calculate the number of sample we derive
+        uint32_t samples = num / wav_header.block_align;
+        uint32_t depth = wav_header.bits_per_sample / 8;
+        int idx = 0;
+        for (int i = 0; i < samples; i++) {
+            for (int j = 0; j < 2; j++) {
+                sample_buf[j][i] = 0;
+                for (int k = 0; k < depth; k++) {
+                    sample_buf[j][i] = (sample_buf[j][i] << 8) + chunk_buf[idx++];
+                }
+            }
+        }
+        // Write channels
+        for (int channel = 0; channel < 2; channel++) {
+            tmp = 1;
+            tmp <<= 1;
+            tmp_buf[tmp_buf_len++] = tmp;
+            write_bytes_big(wav_header.fo, &tmp, 1);
+            for (int i = 0; i < samples; i++) {
+                for (int j = (int) depth - 1; j >= 0; j--) {
+                    tmp_buf[tmp_buf_len++] = (sample_buf[channel][i] >> (j * 8)) & 0xFF;
+                    write_bytes_big(wav_header.fo, &tmp_buf[tmp_buf_len++], 1);
+                }
+            }
+        }
+        // skip crc
+        tmp = PY_CRC_16_T16(tmp_buf, tmp_buf_len);
+        write_bytes_big(wav_header.fo, &tmp, 2);
+        frame_num++;
+    }
+    fclose(wav_header.fi);
+    fclose(wav_header.fo);
+}
+
 
 int main(){
     while(1){
