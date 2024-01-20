@@ -110,6 +110,10 @@ class HeadData {
 
     // Function to read metadata block data
     void editMetaDataBlock(fileReader& infile, fileWriter &outfile, metaDataEdit edit);
+
+
 };
+
+int head_data();
 
 #endif  // HEADDATA_H

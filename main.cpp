@@ -7,6 +7,9 @@
 #include <map>
 #include <sstream>
 
+#include "w2r.cpp"
+#include "headData.h"
+
 using namespace std;
 
 enum AudioFormat {
@@ -62,9 +65,11 @@ int audio_format_code(enum AudioFormat audio_format) {
 void print_menu() {
   printf("\n");
   printf("Menu:\n");
+  printf("\t0. Metadata Display & Edit\n");
   printf("\t1. Raw to WAV\n");
   printf("\t2. WAV to FLAC\n");
-  printf("\t3. Exit\n");
+  printf("\t3. WAV to FLAC\n");
+  printf("\t4. Exit\n");
   printf("\n");
 }
 
@@ -550,6 +555,8 @@ void wav_to_flac() {
   fclose(wav_header.fo);
 }
 
+
+
 int main() {
   while (1) {
     print_menu();
@@ -557,6 +564,9 @@ int main() {
     scanf("%d", &opt);
     struct WAVHeader header;
     switch (opt) {
+      case 0:
+        head_data();
+        break;
       case 1:
         // Request header
         header = read_header();
@@ -566,6 +576,9 @@ int main() {
         wav_to_flac();
         break;
       case 3:
+        wav_to_raw();
+        break;
+      case 4:
         puts("Thanks");
         return 0;
       default:
