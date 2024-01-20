@@ -175,6 +175,14 @@ void write_bytes_big(FILE *f, const void *buf, uint32_t size) {
     }
 }
 
+void read_bytes_little(FILE *f, const void *buf, uint32_t size) {
+    char *buf_char = (char *) buf;
+    for (uint32_t i = 0; i < size; i++) {
+        fread(buf_char + i, 1, 1, f);
+    }
+}
+
+
 int main(){
     while(1){
         print_menu();
