@@ -167,22 +167,22 @@ struct WAVHeader read_header() {
     header.bytes_per_sec = header.sample_rate * header.block_align;
     // Read cbContent
     header.has_cb_content = 0;
-    printf("Does Format chunk contain cbContent? (Y/N): ");
-    char cmd[100];
-    scanf("%s", cmd);
-    if (strcmp(cmd, "Y") == 0) {
-        header.has_cb_content = 1;
-        printf("Input the number of valid bits per sample: ");
-        scanf("%hu", &header.valid_bits_per_sample);
-        printf("Input the channel_mask (decimal): ");
-        scanf("%u", &header.channel_mask);
-        printf("Input the sub format (note: Input 16 bytes in decimal using little-endian byte order, separated by spaces): ");
-        for (int i = 0; i < 16; i++) {
-            scanf("%hu", &header.sub_format[i]);
-        }
-    } else {
-        header.has_cb_content = 0;
-    }
+    // printf("Does Format chunk contain cbContent? (Y/N): ");
+    // char cmd[100];
+    // scanf("%s", cmd);
+    // if (strcmp(cmd, "Y") == 0) {
+    //     header.has_cb_content = 1;
+    //     printf("Input the number of valid bits per sample: ");
+    //     scanf("%hu", &header.valid_bits_per_sample);
+    //     printf("Input the channel_mask (decimal): ");
+    //     scanf("%u", &header.channel_mask);
+    //     printf("Input the sub format (note: Input 16 bytes in decimal using little-endian byte order, separated by spaces): ");
+    //     for (int i = 0; i < 16; i++) {
+    //         scanf("%hu", &header.sub_format[i]);
+    //     }
+    // } else {
+    //     header.has_cb_content = 0;
+    // }
 
     // Calculate the format chunk size
     if (header.has_cb_content) {
