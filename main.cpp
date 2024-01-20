@@ -32,6 +32,27 @@ struct WAVHeader {
     FILE *fo;
 };
 
+
+uint8_t chunk_buf[10000000];
+int sample_buf[2][10000000];
+
+int audio_format_code(enum AudioFormat audio_format) {
+    switch (audio_format) {
+        case WAVE_FORMAT_PCM:
+            return 0x0001;
+        case WAVE_FORMAT_ADPCM:
+            return 0x0002;
+        case WAVE_FORMAT_ALAW:
+            return 0x0006;
+        case WAVE_FORMAT_MULAW:
+            return 0x0007;
+        case WAVE_FORMAT_EXTENSIBLE:
+            return 0xFFFE;
+        default:
+            return 0;
+    }
+}
+
 void print_menu() {
     printf("\n");
     printf("Menu:\n");
