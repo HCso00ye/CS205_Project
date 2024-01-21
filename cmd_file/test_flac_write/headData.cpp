@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "rwFile.h"
+#include "../IOFile/rwFile.h"
 
 using namespace std;
 
@@ -182,8 +182,10 @@ HeadData::metaDataBlockData HeadData::readMetaDataBlock(fileReader &input) {
 }
 
 void HeadData::editMetaDataBlock(fileReader &infile, fileWriter &outfile, metaDataEdit edit) {
+    cout << "--------befor modify---------" << endl;
     metaDataBlockData metaData;
     metaData = readMetaDataBlock(infile);
+    printMetaDataBlock(metaData);
     cout << "-----------------" << endl;
     cout << "Flac metadata edit into: " << endl;
 
@@ -202,14 +204,14 @@ void HeadData::editMetaDataBlock(fileReader &infile, fileWriter &outfile, metaDa
             throw runtime_error("modify comment index error");
         }
         cout << "modify comment" << endl;
-        cout << "befor modify comment " << edit.modifyCommentIndex + 1 << ": " << metaData.vorbisComment.commentList[edit.modifyCommentIndex] << endl;
+        cout << "befor modify comment " << edit.modifyCommentIndex << ": " << metaData.vorbisComment.commentList[edit.modifyCommentIndex] << endl;
 
         metaData.vorbisComment.commentList[edit.modifyCommentIndex] = edit.modifiedComment;
         vector<unsigned int> myVector(edit.modifiedComment.begin(), edit.modifiedComment.end());
         edit.alterSize += myVector.size() - metaData.vorbisComment.commentsOriginal[edit.modifyCommentIndex].size();
         metaData.vorbisComment.commentsOriginal[edit.modifyCommentIndex] = myVector;
 
-        cout << "after modify comment " << edit.modifyCommentIndex + 1 << ": " << metaData.vorbisComment.commentList[edit.modifyCommentIndex] << endl;
+        cout << "after modify comment " << edit.modifyCommentIndex << ": " << metaData.vorbisComment.commentList[edit.modifyCommentIndex] << endl;
     }
     if (edit.appendComment) {
         cout << "append comment" << endl;
@@ -262,7 +264,7 @@ void HeadData::editMetaDataBlock(fileReader &infile, fileWriter &outfile, metaDa
             outfile.writeBigInt(metaData.headers[i].length + edit.alterSize, 24);
             cout << "writing vorbisComment" << endl;
             cout << "alterSize: " << edit.alterSize << endl;
-            outfile.writeLittleInt((int)(metaData.vorbisComment.vendorLength + edit.alterSize), 32);
+            outfile.writeLittleInt((int)(metaData.vorbisComment.vendorString.length()), 32);
             for (char j : metaData.vorbisComment.vendorStringOriginal) {
                 outfile.writeLittleInt((int)j, 8);
             }
@@ -365,6 +367,14 @@ int main(int argc, char *argv[]) {
     } else {
         modifyVendor = "";
     }
+    cout << "Do you want to append comment? (y/n)" << endl;
+    cin >> appendComment;
+    if (appendComment == "y") {
+        cout << "Please input new comment(s) separated by ';': " << endl;
+        cin >> appendComment;
+    } else {
+        appendComment = "";
+    }
     cout << "Do you want to modify comment? (y/n)" << endl;
     cin >> modifyComment;
     if (modifyComment == "y") {
@@ -376,14 +386,7 @@ int main(int argc, char *argv[]) {
         modifyComment = "";
         modifyCommentIndex = "";
     }
-    cout << "Do you want to append comment? (y/n)" << endl;
-    cin >> appendComment;
-    if (appendComment == "y") {
-        cout << "Please input new comment(s) separated by ';': " << endl;
-        cin >> appendComment;
-    } else {
-        appendComment = "";
-    }
+
     cout << "Do you want to remove comment? (y/n)" << endl;
     cin >> removeCommentIndex;
     if (removeCommentIndex == "y") {
@@ -392,6 +395,55 @@ int main(int argc, char *argv[]) {
     } else {
         removeCommentIndex = "";
     }
+
+    // bool noModify = true;
+    // if (noModify) {
+    //     cout << "Do you want to modify vendor string? (y/n)" << endl;
+    //     cin >> modifyVendor;
+    //     if (modifyVendor == "y") {
+    //         cout << "Please input new vendor string: " << endl;
+    //         cin >> modifyVendor;
+    //         noModify = false;
+    //     } else {
+    //         modifyVendor = "";
+    //     }
+    // }
+    // if (noModify) {
+    //     cout << "Do you want to modify comment? (y/n)" << endl;
+    //     cin >> modifyComment;
+    //     if (modifyComment == "y") {
+    //         cout << "Please input comment index: " << endl;
+    //         cin >> modifyCommentIndex;
+    //         cout << "Please input new comment: " << endl;
+    //         cin >> modifyComment;
+    //         noModify = false;
+    //     } else {
+    //         modifyComment = "";
+    //         modifyCommentIndex = "";
+    //     }
+    // }
+    // if (noModify) {
+    //     cout << "Do you want to append comment? (y/n)" << endl;
+    //     cin >> appendComment;
+    //     if (appendComment == "y") {
+    //         cout << "Please input new comment(s) separated by ';': " << endl;
+    //         cin >> appendComment;
+    //         noModify = false;
+    //     } else {
+    //         appendComment = "";
+    //     }
+    // }
+    // if (noModify) {
+    //     cout << "Do you want to remove comment? (y/n)" << endl;
+    //     cin >> removeCommentIndex;
+    //     if (removeCommentIndex == "y") {
+    //         cout << "Please input comment index: " << endl;
+    //         cin >> removeCommentIndex;
+    //         noModify = false;
+    //     } else {
+    //         removeCommentIndex = "";
+    //     }
+    // }
 
     std::ifstream inputFile1(input_path, ios::in | ios::binary);
     ofstream outputFile(output_path, ios::out | ios::trunc | ios::binary);
@@ -408,26 +460,23 @@ int main(int argc, char *argv[]) {
     fileWriter writer(outputFile);
     try {
         HeadData headData;
-        cout << "--------befor modify---------" << endl;
-        // HeadData::metaDataBlockData metaData = headData.readMetaDataBlock(reader);
-        // headData.printMetaDataBlock(metaData);
         cout << "--------modifying---------" << endl;
         headData.editMetaDataBlock(reader, writer, metaEditInfo);
-        cout << "--------after modify------------" << endl;
         reader.closeReader();
         inputFile1.close();
         outputFile.close();
         writer.closeWriter();
+        cout << "--------after modify---------" << endl;
         std::ifstream inputFile2(output_path, ios::in | ios::binary);
         if (!inputFile2.is_open()) {
             throw runtime_error("Error opening output file (main::main)");
         }
         fileReader reader2(inputFile2);
-        HeadData::metaDataBlockData metaData2 = headData.readMetaDataBlock(reader2);
-        headData.printMetaDataBlock(metaData2);
+        HeadData headData2;
+        HeadData::metaDataBlockData metaData2 = headData2.readMetaDataBlock(reader2);
+        headData2.printMetaDataBlock(metaData2);
         reader2.closeReader();
         inputFile2.close();
-
     } catch (exception &e) {
         cout << e.what() << endl;
     }

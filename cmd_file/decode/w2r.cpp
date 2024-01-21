@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-#include "rwFile.h"
+#include "../IOFile/rwFile.h"
 
 using namespace std;
 
@@ -100,42 +100,12 @@ void writeJosn(pcmConfig &config, string &path) {
     jsonFile.close();
 }
 
-// int main() {
-//     string inputFileName = "ovs.wav";
-//     string outputFileName = "test.pcm";
-int main(int argc, char *argv[]) {
-    string input_path, output_path, json_path;
-
-    if (argc == 2) {
-        cout << "Usage: ./main <inputfile> <output file> <json file>" << endl;
-        cout << "using default output file: output.flac json file" << endl;
-        input_path = argv[1];
-        output_path = "output.pcm";
-        json_path = "output.json";
-    } else if (argc == 1) {
-        cout << "Usage: ./main <inputfile> <output file> <json file>" << endl;
-        cout << "using default output file: output.flac json file" << endl;
-        input_path = "test.flac";
-        output_path = "output.flac";
-        json_path = "output.json";
-    } else if (argc == 3) {
-        input_path = argv[1];
-        output_path = argv[2];
-        json_path = "output.json";
-    } else if (argc == 4) {
-        input_path = argv[1];
-        output_path = argv[2];
-        json_path = argv[3];
-    } else {
-        cout << "Usage: ./main <inputfile> <output file> <json file>" << endl;
-        cout << "using default output file: output.flac json file" << endl;
-        input_path = "test.flac";
-        output_path = "output.flac";
-        json_path = "output.json";
-    }
+int main() {
+    string inputFileName = "ovs.wav";
+    string outputFileName = "test.pcm";
     pcmConfig config;
-    ifstream inputFile(input_path, ios::in | ios::binary);
-    ofstream OutputFile(output_path, ios::out | ios::trunc | ios::binary);
+    ifstream inputFile(inputFileName, ios::in | ios::binary);
+    ofstream OutputFile(outputFileName, ios::out | ios::trunc | ios::binary);
     if (!inputFile.is_open()) {
         throw runtime_error("Error opening input file (main::main)");
     }
@@ -147,12 +117,8 @@ int main(int argc, char *argv[]) {
     decodeFile(reader, writer, config);
 
     // 将config写入json文件
-
-    writeJosn(config, json_path);
-    reader.closeReader();
-    writer.closeWriter();
-    inputFile.close();
-    OutputFile.close();
+    string jsonPath = "test.json";
+    writeJosn(config, jsonPath);
 
     return 0;
 }
