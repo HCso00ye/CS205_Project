@@ -68,7 +68,7 @@ void print_menu() {
   printf("\t0. Metadata Display & Edit\n");
   printf("\t1. Raw to WAV\n");
   printf("\t2. WAV to FLAC\n");
-  printf("\t3. WAV to FLAC\n");
+  printf("\t3. WAV to RAW\n");
   printf("\t4. Exit\n");
   printf("\n");
 }

@@ -406,24 +406,10 @@ int head_data() {
   string input_path;
   string output_path;
 
-  printf("Enter the input file path: ");
-  cin >> input_path;
-
-  printf("Enter the output file path: ");
-  cin >> output_path;
-
-  std::ifstream inputFile1(input_path, ios::in | ios::binary);
-  ofstream outputFile(output_path, ios::out | ios::trunc | ios::binary);
-  if (!inputFile1.is_open()) {
-    cout << "Cannot open file " << input_path << endl;
-    return 0;
-  }
-  if (!outputFile.is_open()) {
-    throw runtime_error("Error opening output file (main::main)");
-  }
-
   string modifyVendor, modifyComment, modifyCommentIndex, appendComment,
       removeCommentIndex;
+
+  ofstream outputFile;
 
   printf("\n");
   printf("Choice:\n");
@@ -437,12 +423,27 @@ int head_data() {
 
   int opt;
   scanf("%d", &opt);
+  
+  printf("Enter the input file path: ");
+  cin >> input_path;
+  ifstream inputFile1(input_path, ios::in | ios::binary);
+  if (!inputFile1.is_open()) {
+    cout << "Cannot open file " << input_path << endl;
+    return 0;
+  }
 
   if (opt == 0) {
     HeadData headData;
     fileReader input(inputFile1);
     HeadData::metaDataBlockData mD = headData.readMetaDataBlock(input);
     headData.printMetaDataBlock(mD);
+  } else {
+    printf("Enter the output file path: ");
+    cin >> output_path;
+    outputFile.open(output_path, ios::out | ios::trunc | ios::binary);
+    if (!outputFile.is_open()) {
+      throw runtime_error("Error opening output file (main::main)");
+    }
   }
 
   switch (opt) {
