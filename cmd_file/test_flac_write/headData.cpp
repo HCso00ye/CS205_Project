@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "../IOFile/rwFile.h"
+#include "rwFile.h"
 
 using namespace std;
 

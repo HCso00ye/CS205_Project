@@ -5,8 +5,10 @@
 #include <string>
 #include <vector>
 #include<iostream>
-#include "../IOFile/rwFile.h"
+
 #include <fstream>
+
+#include "rwFile.h"
 
 using namespace std;
 
