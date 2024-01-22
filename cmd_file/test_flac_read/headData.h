@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 #include<iostream>
-#include "../IOFile/rwFile.h"
+#include "rwFile.h"
 #include <fstream>
 
 using namespace std;
