@@ -7,8 +7,9 @@
 #include <map>
 #include <sstream>
 
-#include "w2r.h"
 #include "headData.h"
+#include "w2r.h"
+
 
 using namespace std;
 
@@ -555,34 +556,30 @@ void wav_to_flac() {
   fclose(wav_header.fo);
 }
 
-
-
 int main() {
-  while (1) {
-    print_menu();
-    int opt;
-    scanf("%d", &opt);
-    struct WAVHeader header;
-    switch (opt) {
-      case 0:
-        head_data();
-        break;
-      case 1:
-        // Request header
-        header = read_header();
-        raw_to_wav(header);
-        break;
-      case 2:
-        wav_to_flac();
-        break;
-      case 3:
-        wav_to_raw();
-        break;
-      case 4:
-        puts("Thanks");
-        return 0;
-      default:
-        puts("Bad input");
-    }
+  print_menu();
+  int opt;
+  scanf("%d", &opt);
+  struct WAVHeader header;
+  switch (opt) {
+    case 0:
+      head_data();
+      break;
+    case 1:
+      // Request header
+      header = read_header();
+      raw_to_wav(header);
+      break;
+    case 2:
+      wav_to_flac();
+      break;
+    case 3:
+      wav_to_raw();
+      break;
+    case 4:
+      puts("Thanks");
+      return 0;
+    default:
+      puts("Bad input");
   }
 }
