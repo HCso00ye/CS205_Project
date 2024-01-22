@@ -338,147 +338,150 @@ HeadData::metaDataEdit getEditData(const string &modifyVendor, const string &mod
     return metaEditInfo;
 }
 
-// int main(int argc, char *argv[]) {
-//     string input_path, output_path;
-//     string modifyVendor,
-//         modifyComment, modifyCommentIndex,
-//         appendComment,
-//         removeCommentIndex;
+/*
+int main() {
+  // if (argc != 2) {
+  //     cout << "Usage: ./main <file>" << endl;
+  //     return 0;
+  // }
+  // string in = "test.flac";
 
-//     if (argc == 2) {
-//         cout << "Usage: ./main <inputfile> <output file>" << endl;
-//         cout << "using default output file: output.flac" << endl;
-//         input_path = argv[1];
-//         output_path = "output.flac";
-//     } else if (argc == 1) {
-//         cout << "Usage: ./main <inputfile> <output file>" << endl;
-//         cout << "using default file: test.flac output.flac" << endl;
-//         input_path = "test.flac";
-//         output_path = "output.flac";
-//     } else if (argc == 3) {
-//         input_path = argv[1];
-//         output_path = argv[2];
-//     }
-//     cout << "Do you want to modify vendor string? (y/n)" << endl;
-//     cin >> modifyVendor;
-//     if (modifyVendor == "y") {
-//         cout << "Please input new vendor string: " << endl;
-//         cin >> modifyVendor;
-//     } else {
-//         modifyVendor = "";
-//     }
-//     cout << "Do you want to append comment? (y/n)" << endl;
-//     cin >> appendComment;
-//     if (appendComment == "y") {
-//         cout << "Please input new comment(s) separated by ';': " << endl;
-//         cin >> appendComment;
-//     } else {
-//         appendComment = "";
-//     }
-//     cout << "Do you want to modify comment? (y/n)" << endl;
-//     cin >> modifyComment;
-//     if (modifyComment == "y") {
-//         cout << "Please input comment index: " << endl;
-//         cin >> modifyCommentIndex;
-//         cout << "Please input new comment: " << endl;
-//         cin >> modifyComment;
-//     } else {
-//         modifyComment = "";
-//         modifyCommentIndex = "";
-//     }
+  // std::ifstream inputFile(in, ios::in | ios::binary);
+  // if (!inputFile.is_open()) {
+  //     cout << "Cannot open file " << in << endl;
+  //     return 0;
+  // }
+  // try {
+  //     fileReader input(inputFile);
+  //     HeadData headData;
+  //     HeadData::metaDataBlockData metaData =
+  //     headData.readMetaDataBlock(input);
+  //     headData.printMetaDataBlock(metaData);
+  // } catch (runtime_error &e) {
+  //     cout << e.what() << endl;
+  // }
 
-//     cout << "Do you want to remove comment? (y/n)" << endl;
-//     cin >> removeCommentIndex;
-//     if (removeCommentIndex == "y") {
-//         cout << "Please input comment index: " << endl;
-//         cin >> removeCommentIndex;
-//     } else {
-//         removeCommentIndex = "";
-//     }
+  string input_path = "mono.flac";
+  string output_path = "test.flac";
+  std::ifstream inputFile1(input_path, ios::in | ios::binary);
+  ofstream outputFile(output_path, ios::out | ios::trunc | ios::binary);
+  if (!inputFile1.is_open()) {
+    cout << "Cannot open file " << input_path << endl;
+    return 0;
+  }
+  if (!outputFile.is_open()) {
+    throw runtime_error("Error opening output file (main::main)");
+  }
 
-//     // bool noModify = true;
-//     // if (noModify) {
-//     //     cout << "Do you want to modify vendor string? (y/n)" << endl;
-//     //     cin >> modifyVendor;
-//     //     if (modifyVendor == "y") {
-//     //         cout << "Please input new vendor string: " << endl;
-//     //         cin >> modifyVendor;
-//     //         noModify = false;
-//     //     } else {
-//     //         modifyVendor = "";
-//     //     }
-//     // }
-//     // if (noModify) {
-//     //     cout << "Do you want to modify comment? (y/n)" << endl;
-//     //     cin >> modifyComment;
-//     //     if (modifyComment == "y") {
-//     //         cout << "Please input comment index: " << endl;
-//     //         cin >> modifyCommentIndex;
-//     //         cout << "Please input new comment: " << endl;
-//     //         cin >> modifyComment;
-//     //         noModify = false;
-//     //     } else {
-//     //         modifyComment = "";
-//     //         modifyCommentIndex = "";
-//     //     }
-//     // }
-//     // if (noModify) {
-//     //     cout << "Do you want to append comment? (y/n)" << endl;
-//     //     cin >> appendComment;
-//     //     if (appendComment == "y") {
-//     //         cout << "Please input new comment(s) separated by ';': " << endl;
-//     //         cin >> appendComment;
-//     //         noModify = false;
-//     //     } else {
-//     //         appendComment = "";
-//     //     }
-//     // }
-//     // if (noModify) {
-//     //     cout << "Do you want to remove comment? (y/n)" << endl;
-//     //     cin >> removeCommentIndex;
-//     //     if (removeCommentIndex == "y") {
-//     //         cout << "Please input comment index: " << endl;
-//     //         cin >> removeCommentIndex;
-//     //         noModify = false;
-//     //     } else {
-//     //         removeCommentIndex = "";
-//     //     }
-//     // }
+  string modifyVendor, modifyComment, modifyCommentIndex, appendComment,
+      removeCommentIndex;
+  modifyVendor = "test";
+  // modifyComment = "test";
+  // modifyCommentIndex = "0";
+  // appendComment = "test";
+  // removeCommentIndex = "0";
+  HeadData::metaDataEdit metaEditInfo =
+      getEditData(modifyVendor, modifyComment, modifyCommentIndex,
+                  appendComment, removeCommentIndex);
 
-//     std::ifstream inputFile1(input_path, ios::in | ios::binary);
-//     ofstream outputFile(output_path, ios::out | ios::trunc | ios::binary);
-//     if (!inputFile1.is_open()) {
-//         cout << "Cannot open file " << input_path << endl;
-//         return 0;
-//     }
-//     if (!outputFile.is_open()) {
-//         throw runtime_error("Error opening output file (main::main)");
-//     }
-//     HeadData::metaDataEdit metaEditInfo = getEditData(modifyVendor, modifyComment, modifyCommentIndex, appendComment, removeCommentIndex);
+  fileReader reader(inputFile1);
+  fileWriter writer(outputFile);
+  try {
+    HeadData headData;
+    headData.editMetaDataBlock(reader, writer, metaEditInfo);
+  } catch (exception &e) {
+    cout << e.what() << endl;
+  }
+  reader.closeReader();
 
-//     fileReader reader(inputFile1);
-//     fileWriter writer(outputFile);
-//     try {
-//         HeadData headData;
-//         cout << "--------modifying---------" << endl;
-//         headData.editMetaDataBlock(reader, writer, metaEditInfo);
-//         reader.closeReader();
-//         inputFile1.close();
-//         outputFile.close();
-//         writer.closeWriter();
-//         cout << "--------after modify---------" << endl;
-//         std::ifstream inputFile2(output_path, ios::in | ios::binary);
-//         if (!inputFile2.is_open()) {
-//             throw runtime_error("Error opening output file (main::main)");
-//         }
-//         fileReader reader2(inputFile2);
-//         HeadData headData2;
-//         HeadData::metaDataBlockData metaData2 = headData2.readMetaDataBlock(reader2);
-//         headData2.printMetaDataBlock(metaData2);
-//         reader2.closeReader();
-//         inputFile2.close();
-//     } catch (exception &e) {
-//         cout << e.what() << endl;
-//     }
-//     return 0;
-// }
+  return 0;
+}
+*/
+
+int head_data() {
+  string input_path;
+  string output_path;
+
+  string modifyVendor, modifyComment, modifyCommentIndex, appendComment,
+      removeCommentIndex;
+
+  ofstream outputFile;
+
+  printf("\n");
+  printf("Choice:\n");
+  printf("\t0. display\n");
+  printf("\t1. modifyVendor\n");
+  printf("\t2. modifyComment\n");
+  printf("\t3. appendComment\n");
+  printf("\t4. removeComment\n");
+  printf("\t5. exit\n");
+  printf("\n");
+
+  int opt;
+  scanf("%d", &opt);
+  
+  printf("Enter the input file path: ");
+  cin >> input_path;
+  ifstream inputFile1(input_path, ios::in | ios::binary);
+  if (!inputFile1.is_open()) {
+    cout << "Cannot open file " << input_path << endl;
+    return 0;
+  }
+
+  if (opt == 0) {
+    HeadData headData;
+    fileReader input(inputFile1);
+    HeadData::metaDataBlockData mD = headData.readMetaDataBlock(input);
+    headData.printMetaDataBlock(mD);
+  } else {
+    printf("Enter the output file path: ");
+    cin >> output_path;
+    outputFile.open(output_path, ios::out | ios::trunc | ios::binary);
+    if (!outputFile.is_open()) {
+      throw runtime_error("Error opening output file (main::main)");
+    }
+  }
+
+  switch (opt) {
+    case 0:
+      break;
+
+    case 1:
+      printf("Enter the modifyVendor: ");
+        cin >> modifyVendor;
+
+      break;
+    case 2:
+      printf("Enter the modifyComment: ");
+      cin >> modifyComment;
+      printf("Enter the modifyCommentIndex: ");
+      cin >> modifyCommentIndex;
+      break;
+    case 3:
+      printf("Enter the appendComment: ");
+      cin >> appendComment;
+      break;
+    case 4:
+      printf("Enter the removeCommentIndex: ");
+      cin >> removeCommentIndex;
+      return 0;
+      break;
+    default:
+      puts("Bad input");
+  }
+  HeadData::metaDataEdit metaEditInfo =
+      getEditData(modifyVendor, modifyComment, modifyCommentIndex,
+                  appendComment, removeCommentIndex);
+
+  fileReader reader(inputFile1);
+  fileWriter writer(outputFile);
+  try {
+    HeadData headData;
+    headData.editMetaDataBlock(reader, writer, metaEditInfo);
+  } catch (exception &e) {
+    cout << e.what() << endl;
+  }
+  reader.closeReader();
+
+  return 0;
+}
